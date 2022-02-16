@@ -10,35 +10,60 @@ use std::fs;
 use std::rc::Rc;
 use std::cell::RefCell;
 
-fn print_ps1(val: ValRef, scope: &Rc<RefCell<Scope>>) -> Result<(), String> {
-    match val {
-        ValRef::None => (),
-        ValRef::Lazy(..) => (),
-        ValRef::ProtectedLazy(..) => (),
-        ValRef::Number(num) => print!("{}", num),
-        ValRef::Map(..) => (),
-        ValRef::List(lst) => {
-            for item in lst.as_ref() {
-                print_ps1(item.clone(), scope)?;
-            }
-        }
-        ValRef::String(s) => print!("{}", s),
-        ValRef::Func(func) => {
-            let args = Vec::new();
-            print_ps1(func(args, scope)?, scope)?
-        }
-        ValRef::Quote(exprs) => {
-            let mut retval = ValRef::None;
-            for expr in exprs.as_ref() {
-                retval = eval::eval(expr, scope)?;
-            }
+struct Printer {
+    column: i32,
+    row: i32,
+}
 
-            print_ps1(retval, scope)?;
+impl Printer {
+    fn print(&mut self, s: String) {
+        for ch in s.chars() {
+            if ch == '\n' {
+                self.column = 1;
+                self.row += 1;
+            } else {
+                self.column += 1;
+            }
         }
+
+        print!("{}", s)
+    }
+}
+
+fn print_ps1(
+    printer: &Rc<RefCell<Printer>>,
+    val: ValRef,
+    scope: &Rc<RefCell<Scope>>) -> Result<(), String>
+{
+        match val {
+            ValRef::None => (),
+            ValRef::Lazy(..) => (),
+            ValRef::ProtectedLazy(..) => (),
+            ValRef::Number(num) => printer.borrow_mut().print(format!("{}", num)),
+            ValRef::Map(..) => (),
+            ValRef::List(lst) => {
+                for item in lst.as_ref() {
+                    print_ps1(&printer, item.clone(), scope)?;
+                }
+            }
+            ValRef::String(s) => printer.borrow_mut().print(s.as_ref().clone()),
+            ValRef::Func(func) => {
+                let args = Vec::new();
+                print_ps1(printer, func(args, scope)?, scope)?
+            }
+            ValRef::Quote(exprs) => {
+                let mut retval = ValRef::None;
+                for expr in exprs.as_ref() {
+                    retval = eval::eval(expr, scope)?;
+                }
+
+                print_ps1(printer, retval, scope)?;
+            }
+        }
+
+        Ok(())
     }
 
-    Ok(())
-}
 
 fn execute_file(reader: &mut parse::Reader, scope: &Rc<RefCell<Scope>>) -> Result<ValRef, String>{
     let mut retval = ValRef::None;
@@ -83,11 +108,25 @@ fn main() {
         shell: state::Shell::None,
     });
 
+    let printer = Rc::new(RefCell::new(Printer {
+        column: 1,
+        row: 1,
+    }));
+
     let scope = Rc::new(RefCell::new(eval::Scope::new(None)));
     stdlib::init(&scope);
-    basic::init(&scope);
+    basic::init(&scope, &state);
     color::init(&scope, &state);
     git::init(&scope);
+
+    {
+        let s = printer.clone();
+        scope.borrow_mut().put_func("column",
+            Rc::new(move |_, _| Ok(ValRef::Number(s.borrow().column))));
+        let s = printer.clone();
+        scope.borrow_mut().put_func("row",
+            Rc::new(move |_, _| Ok(ValRef::Number(s.borrow().row))));
+    }
 
     let mut reader = parse::Reader::new(&file_string.as_bytes());
     let retval = match execute_file(&mut reader, &scope) {
@@ -98,7 +137,7 @@ fn main() {
         }
     };
 
-    match print_ps1(retval, &scope) {
+    match print_ps1(&printer, retval, &scope) {
         Err(err) => {
             print!("Error: {}", err);
             return;
