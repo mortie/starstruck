@@ -1,6 +1,7 @@
 mod state;
 mod basic;
 mod color;
+mod git;
 
 use glisp::{parse, eval, stdlib};
 use eval::{ValRef, Scope};
@@ -86,6 +87,7 @@ fn main() {
     stdlib::init(&scope);
     basic::init(&scope);
     color::init(&scope, &state);
+    git::init(&scope);
 
     let mut reader = parse::Reader::new(&file_string.as_bytes());
     let retval = match execute_file(&mut reader, &scope) {
