@@ -1,7 +1,7 @@
 use super::state::State;
-use glisp::eval::{ValRef, Scope};
-use std::rc::Rc;
+use glisp::eval::{Scope, ValRef};
 use std::cell::RefCell;
+use std::rc::Rc;
 
 const BLACK: &'static str = "\x1b[30m";
 const RED: &'static str = "\x1b[31m";
@@ -61,7 +61,11 @@ fn pop_color(ctx: &Rc<RefCell<ColorCtx>>) -> Result<ValRef, String> {
     Ok(ValRef::String(Rc::new(s)))
 }
 
-fn color(ctx: &Rc<RefCell<ColorCtx>>, col: &'static str, args: Vec<ValRef>) -> Result<ValRef, String> {
+fn color(
+    ctx: &Rc<RefCell<ColorCtx>>,
+    col: &'static str,
+    args: Vec<ValRef>,
+) -> Result<ValRef, String> {
     let mut ret: Vec<ValRef> = Vec::new();
 
     {
@@ -82,10 +86,14 @@ fn color(ctx: &Rc<RefCell<ColorCtx>>, col: &'static str, args: Vec<ValRef>) -> R
 pub fn init(scope: &Rc<RefCell<Scope>>, state: &Rc<State>) {
     let ctx = Rc::new(RefCell::new(ColorCtx::new(state.clone())));
 
-    macro_rules! put{($name: expr, $color: expr) => {
-        let c = ctx.clone();
-        scope.borrow_mut().put_func($name, Rc::new(move |a, _| color(&c, $color, a)));
-    }}
+    macro_rules! put {
+        ($name: expr, $color: expr) => {
+            let c = ctx.clone();
+            scope
+                .borrow_mut()
+                .put_func($name, Rc::new(move |a, _| color(&c, $color, a)));
+        };
+    }
 
     put!("black", BLACK);
     put!("red", RED);

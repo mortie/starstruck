@@ -1,5 +1,9 @@
 #[derive(Copy, Clone)]
-pub enum Shell {None, Bash, Zsh}
+pub enum Shell {
+    None,
+    Bash,
+    Zsh,
+}
 
 pub struct State {
     pub exit_code: u8,

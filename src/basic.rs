@@ -1,10 +1,10 @@
 use super::state::State;
-use glisp::eval::{ValRef, Scope};
-use std::rc::Rc;
+use dirs;
+use glisp::eval::{Scope, ValRef};
 use std::cell::RefCell;
 use std::env;
+use std::rc::Rc;
 use whoami;
-use dirs;
 
 fn username(_: Vec<ValRef>, _: &Rc<RefCell<Scope>>) -> Result<ValRef, String> {
     Ok(ValRef::String(Rc::new(whoami::username())))
@@ -54,8 +54,12 @@ fn getenv(args: Vec<ValRef>, _: &Rc<RefCell<Scope>>) -> Result<ValRef, String> {
 }
 
 pub fn init(scope: &Rc<RefCell<Scope>>, state: &Rc<State>) {
-    scope.borrow_mut().put("exit-code", ValRef::Number(state.exit_code as i32));
-    scope.borrow_mut().put("space", ValRef::String(Rc::new(" ".to_string())));
+    scope
+        .borrow_mut()
+        .put("exit-code", ValRef::Number(state.exit_code as i32));
+    scope
+        .borrow_mut()
+        .put("space", ValRef::String(Rc::new(" ".to_string())));
     scope.borrow_mut().put_lazy("username", Rc::new(username));
     scope.borrow_mut().put_lazy("host", Rc::new(host));
     scope.borrow_mut().put_lazy("cwd", Rc::new(cwd));

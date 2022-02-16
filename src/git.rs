@@ -1,9 +1,9 @@
-use glisp::eval::{ValRef, Scope};
-use std::rc::Rc;
+use glisp::eval::{Scope, ValRef};
 use std::cell::RefCell;
-use std::path::PathBuf;
 use std::env;
 use std::fs;
+use std::path::PathBuf;
+use std::rc::Rc;
 
 struct GitCtx {
     has_searched_gitdir: bool,
@@ -94,10 +94,11 @@ fn git_branch(ctx: &Rc<RefCell<GitCtx>>) -> Result<ValRef, String> {
         Err(..) => return Ok(ValRef::None),
         Ok(contents) => match std::str::from_utf8(&contents[..]) {
             Err(..) => return Ok(ValRef::None),
-            Ok(contents) => contents.strip_prefix("ref: refs/heads/")
+            Ok(contents) => contents
+                .strip_prefix("ref: refs/heads/")
                 .and_then(|x| x.strip_suffix("\n"))
                 .map(|x| Rc::new(x.to_string())),
-        }
+        },
     };
 
     match branch {
@@ -109,10 +110,14 @@ fn git_branch(ctx: &Rc<RefCell<GitCtx>>) -> Result<ValRef, String> {
 pub fn init(scope: &Rc<RefCell<Scope>>) {
     let ctx = Rc::new(RefCell::new(GitCtx::new()));
 
-    macro_rules! put{($name: expr, $func: expr) => {
-        let c = ctx.clone();
-        scope.borrow_mut().put_lazy($name, Rc::new(move |_, _| $func(&c)));
-    }}
+    macro_rules! put {
+        ($name: expr, $func: expr) => {
+            let c = ctx.clone();
+            scope
+                .borrow_mut()
+                .put_lazy($name, Rc::new(move |_, _| $func(&c)));
+        };
+    }
 
     put!("has-git?", has_git);
     put!("git-dir", git_dir);

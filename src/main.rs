@@ -1,14 +1,14 @@
-mod state;
 mod basic;
 mod color;
 mod git;
+mod state;
 
-use glisp::{parse, eval, stdlib};
-use eval::{ValRef, Scope};
+use eval::{Scope, ValRef};
+use glisp::{eval, parse, stdlib};
+use std::cell::RefCell;
 use std::env;
 use std::fs;
 use std::rc::Rc;
-use std::cell::RefCell;
 
 struct Printer {
     column: i32,
@@ -33,47 +33,46 @@ impl Printer {
 fn print_ps1(
     printer: &Rc<RefCell<Printer>>,
     val: ValRef,
-    scope: &Rc<RefCell<Scope>>) -> Result<(), String>
-{
-        match val {
-            ValRef::None => (),
-            ValRef::Lazy(..) => (),
-            ValRef::ProtectedLazy(..) => (),
-            ValRef::Number(num) => printer.borrow_mut().print(format!("{}", num)),
-            ValRef::Map(..) => (),
-            ValRef::List(lst) => {
-                for item in lst.as_ref() {
-                    print_ps1(&printer, item.clone(), scope)?;
-                }
-            }
-            ValRef::String(s) => printer.borrow_mut().print(s.as_ref().clone()),
-            ValRef::Func(func) => {
-                let args = Vec::new();
-                print_ps1(printer, func(args, scope)?, scope)?
-            }
-            ValRef::Quote(exprs) => {
-                let mut retval = ValRef::None;
-                for expr in exprs.as_ref() {
-                    retval = eval::eval(expr, scope)?;
-                }
-
-                print_ps1(printer, retval, scope)?;
+    scope: &Rc<RefCell<Scope>>,
+) -> Result<(), String> {
+    match val {
+        ValRef::None => (),
+        ValRef::Lazy(..) => (),
+        ValRef::ProtectedLazy(..) => (),
+        ValRef::Number(num) => printer.borrow_mut().print(format!("{}", num)),
+        ValRef::Map(..) => (),
+        ValRef::List(lst) => {
+            for item in lst.as_ref() {
+                print_ps1(&printer, item.clone(), scope)?;
             }
         }
-
-        Ok(())
+        ValRef::String(s) => printer.borrow_mut().print(s.as_ref().clone()),
+        ValRef::Func(func) => {
+            let args = Vec::new();
+            print_ps1(printer, func(args, scope)?, scope)?
+        }
+        ValRef::Quote(exprs) => {
+            print_ps1(printer, eval::eval_call(exprs.as_ref(), scope)?, scope)?;
+        }
     }
 
+    Ok(())
+}
 
-fn execute_file(reader: &mut parse::Reader, scope: &Rc<RefCell<Scope>>) -> Result<ValRef, String>{
+fn execute_file(reader: &mut parse::Reader, scope: &Rc<RefCell<Scope>>) -> Result<ValRef, String> {
     let mut retval = ValRef::None;
     loop {
         let expr = match parse::parse(reader) {
             Ok(expr) => match expr {
                 Some(expr) => expr,
                 None => return Ok(retval),
+            },
+            Err(err) => {
+                return Err(format!(
+                    "Parse error: {}:{}: {}",
+                    err.line, err.col, err.msg
+                ))
             }
-            Err(err) => return Err(format!("Parse error: {}:{}: {}", err.line, err.col, err.msg)),
         };
 
         match eval::eval(&expr, &scope) {
@@ -108,10 +107,7 @@ fn main() {
         shell: state::Shell::None,
     });
 
-    let printer = Rc::new(RefCell::new(Printer {
-        column: 1,
-        row: 1,
-    }));
+    let printer = Rc::new(RefCell::new(Printer { column: 1, row: 1 }));
 
     let scope = Rc::new(RefCell::new(eval::Scope::new(None)));
     stdlib::init(&scope);
@@ -121,11 +117,15 @@ fn main() {
 
     {
         let s = printer.clone();
-        scope.borrow_mut().put_func("column",
-            Rc::new(move |_, _| Ok(ValRef::Number(s.borrow().column))));
+        scope.borrow_mut().put_lazy(
+            "column",
+            Rc::new(move |_, _| Ok(ValRef::Number(s.borrow().column))),
+        );
         let s = printer.clone();
-        scope.borrow_mut().put_func("row",
-            Rc::new(move |_, _| Ok(ValRef::Number(s.borrow().row))));
+        scope.borrow_mut().put_lazy(
+            "row",
+            Rc::new(move |_, _| Ok(ValRef::Number(s.borrow().row))),
+        );
     }
 
     let mut reader = parse::Reader::new(&file_string.as_bytes());
@@ -142,6 +142,6 @@ fn main() {
             print!("Error: {}", err);
             return;
         }
-        _ => ()
+        _ => (),
     };
 }
