@@ -39,24 +39,24 @@ impl GitCtx {
             }
 
             path.push(".git");
-            let meta = match fs::metadata(&path) {
-                Ok(meta) => meta,
-                Err(..) => continue,
-            };
+            match fs::metadata(&path) {
+                Ok(meta) => {
+                    if meta.is_dir() {
+                        self.has_searched_gitdir = true;
 
-            if meta.is_dir() {
-                self.has_searched_gitdir = true;
-
-                // Pretend we don't have a .git dir if it's invalid UTF-8,
-                // for simplicity
-                match path.to_str() {
-                    None => return false,
-                    Some(..) => {
-                        self.gitdir = Some(path);
-                        return true;
+                        // Pretend we don't have a .git dir if it's invalid UTF-8,
+                        // for simplicity
+                        match path.to_str() {
+                            None => return false,
+                            Some(..) => {
+                                self.gitdir = Some(path);
+                                return true;
+                            }
+                        };
                     }
-                };
-            }
+                }
+                Err(..) => (),
+            };
 
             vec.pop();
         }
