@@ -4,7 +4,7 @@ mod git;
 mod state;
 
 use eval::{Scope, ValRef};
-use glisp::{eval, parse, stdlib};
+use glisp::{eval, parse, stdlib, iolib};
 use std::cell::RefCell;
 use std::env;
 use std::fs;
@@ -70,6 +70,7 @@ fn print_ps1(
                 printer.borrow().print_uncounted(&us.s);
             }
         }
+        ValRef::Port(..) => (),
     }
 
     Ok(())
@@ -215,6 +216,7 @@ fn main() {
 
     let scope = Rc::new(RefCell::new(eval::Scope::new(None)));
     stdlib::init(&scope);
+    iolib::init(&scope);
     basic::init(&scope, &state);
     color::init(&scope, &state);
     git::init(&scope);
