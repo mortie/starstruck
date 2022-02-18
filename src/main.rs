@@ -6,7 +6,7 @@ mod sys;
 
 use dirs;
 use eval::{Scope, ValRef};
-use glisp::{eval, iolib, parse, stdlib};
+use osyris::{eval, iolib, parse, stdlib};
 use std::cell::RefCell;
 use std::env;
 use std::fs;

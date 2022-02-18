@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-glisp = {path = "../glisp"}
+osyris = {path = "../osyris"}
 whoami = "1.2"
 dirs = "4.0"
 terminal_size = "0.1"

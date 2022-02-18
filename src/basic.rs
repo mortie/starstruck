@@ -1,7 +1,7 @@
 use super::state::State;
 use super::sys;
 use dirs;
-use glisp::eval::{Scope, ValRef};
+use osyris::eval::{Scope, ValRef};
 use std::cell::RefCell;
 use std::env;
 use std::rc::Rc;

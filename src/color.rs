@@ -1,6 +1,6 @@
 use super::state::State;
 use super::UncountedString;
-use glisp::eval::{Scope, ValRef};
+use osyris::eval::{Scope, ValRef};
 use std::cell::RefCell;
 use std::rc::Rc;
 
