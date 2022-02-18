@@ -2,16 +2,17 @@ mod basic;
 mod color;
 mod git;
 mod state;
+mod sys;
 
+use dirs;
 use eval::{Scope, ValRef};
-use glisp::{eval, parse, stdlib, iolib};
+use glisp::{eval, iolib, parse, stdlib};
 use std::cell::RefCell;
 use std::env;
 use std::fs;
-use std::rc::Rc;
-use std::path::{PathBuf, Path};
+use std::path::{Path, PathBuf};
 use std::process;
-use dirs;
+use std::rc::Rc;
 
 pub struct UncountedString {
     pub s: String,
@@ -177,7 +178,7 @@ fn main() {
                         eprintln!("Invalid exit code '{}': {}", s, err);
                         process::exit(1);
                     }
-                }
+                },
                 None => {
                     eprintln!("Option 'e' requires an argument");
                     process::exit(1);
@@ -245,7 +246,7 @@ fn main() {
 
     match print_ps1(&printer, retval, &scope) {
         Err(err) => {
-            print!("Error: {}", err);
+            eprintln!("Error: {}", err);
             return;
         }
         _ => (),

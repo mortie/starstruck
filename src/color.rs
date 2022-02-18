@@ -46,7 +46,7 @@ fn push_color(ctx: &Rc<RefCell<ColorCtx>>, col: &'static str) -> Result<ValRef, 
         0 => format!("{}{}{}", escape_start, col, escape_end),
         _ => format!("{}{}{}{}", escape_start, RESET, col, escape_end),
     };
-    Ok(ValRef::Native(Rc::new(UncountedString{s})))
+    Ok(ValRef::Native(Rc::new(UncountedString { s })))
 }
 
 fn pop_color(ctx: &Rc<RefCell<ColorCtx>>) -> Result<ValRef, String> {
@@ -59,7 +59,7 @@ fn pop_color(ctx: &Rc<RefCell<ColorCtx>>) -> Result<ValRef, String> {
         Some(last) => format!("{}{}{}{}", escape_start, RESET, last, escape_end),
     };
 
-    Ok(ValRef::Native(Rc::new(UncountedString{s})))
+    Ok(ValRef::Native(Rc::new(UncountedString { s })))
 }
 
 fn color(

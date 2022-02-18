@@ -1,18 +1,28 @@
 use super::state::State;
+use super::sys;
 use dirs;
 use glisp::eval::{Scope, ValRef};
 use std::cell::RefCell;
 use std::env;
 use std::rc::Rc;
-use whoami;
-use terminal_size;
 
 fn username(_: Vec<ValRef>, _: &Rc<RefCell<Scope>>) -> Result<ValRef, String> {
-    Ok(ValRef::String(Rc::new(whoami::username())))
+    Ok(ValRef::String(Rc::new(sys::username())))
 }
 
 fn host(_: Vec<ValRef>, _: &Rc<RefCell<Scope>>) -> Result<ValRef, String> {
-    Ok(ValRef::String(Rc::new(whoami::devicename())))
+    Ok(ValRef::String(Rc::new(sys::devicename())))
+}
+
+fn login_name(_: Vec<ValRef>, _: &Rc<RefCell<Scope>>) -> Result<ValRef, String> {
+    Ok(ValRef::String(Rc::new(sys::login_name())))
+}
+
+fn is_remote(_: Vec<ValRef>, _: &Rc<RefCell<Scope>>) -> Result<ValRef, String> {
+    match env::var("SSH_CLIENT") {
+        Ok(_) => Ok(ValRef::Number(1)),
+        Err(_) => Ok(ValRef::Number(0)),
+    }
 }
 
 fn replace_home_path(path: String) -> String {
@@ -36,28 +46,13 @@ fn cwd(_: Vec<ValRef>, _: &Rc<RefCell<Scope>>) -> Result<ValRef, String> {
     Ok(ValRef::String(Rc::new(replace_home_path(wd))))
 }
 
-#[cfg(unix)]
-fn term_size() -> (i32, i32) {
-    use terminal_size::{Width, Height};
-    // We use stderr (FD 2) because the shell messes with stdin and stdout
-    match terminal_size::terminal_size_using_fd(2) {
-        Some((Width(w), Height(h))) => (w as i32, h as i32),
-        None => (80, 60),
-    }
-}
-
-#[cfg(not(unix))]
-fn term_size() -> (i32, i32) {
-    (80, 60)
-}
-
 fn term_width(_: Vec<ValRef>, _: &Rc<RefCell<Scope>>) -> Result<ValRef, String> {
-    let (w, _) = term_size();
+    let (w, _) = sys::term_size();
     Ok(ValRef::Number(w))
 }
 
 fn term_height(_: Vec<ValRef>, _: &Rc<RefCell<Scope>>) -> Result<ValRef, String> {
-    let (_, h) = term_size();
+    let (_, h) = sys::term_size();
     Ok(ValRef::Number(h))
 }
 
@@ -80,16 +75,15 @@ fn getenv(args: Vec<ValRef>, _: &Rc<RefCell<Scope>>) -> Result<ValRef, String> {
 }
 
 pub fn init(scope: &Rc<RefCell<Scope>>, state: &Rc<State>) {
-    scope
-        .borrow_mut()
-        .put("exit-code", ValRef::Number(state.exit_code as i32));
-    scope
-        .borrow_mut()
-        .put("space", ValRef::String(Rc::new(" ".to_string())));
-    scope.borrow_mut().put_lazy("username", Rc::new(username));
-    scope.borrow_mut().put_lazy("host", Rc::new(host));
-    scope.borrow_mut().put_lazy("cwd", Rc::new(cwd));
-    scope.borrow_mut().put_lazy("term-width", Rc::new(term_width));
-    scope.borrow_mut().put_lazy("term-height", Rc::new(term_height));
-    scope.borrow_mut().put_func("getenv", Rc::new(getenv));
+    let mut s = scope.borrow_mut();
+    s.put("exit-code", ValRef::Number(state.exit_code as i32));
+    s.put("space", ValRef::String(Rc::new(" ".to_string())));
+    s.put_lazy("username", Rc::new(username));
+    s.put_lazy("host", Rc::new(host));
+    s.put_lazy("login-name", Rc::new(login_name));
+    s.put_lazy("is-remote?", Rc::new(is_remote));
+    s.put_lazy("cwd", Rc::new(cwd));
+    s.put_lazy("term-width", Rc::new(term_width));
+    s.put_lazy("term-height", Rc::new(term_height));
+    s.put_func("getenv", Rc::new(getenv));
 }
