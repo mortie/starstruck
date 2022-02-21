@@ -11,7 +11,7 @@ fn username(_: Vec<ValRef>, _: &Rc<RefCell<Scope>>) -> Result<ValRef, String> {
 }
 
 fn host(_: Vec<ValRef>, _: &Rc<RefCell<Scope>>) -> Result<ValRef, String> {
-    Ok(ValRef::String(Rc::new(sys::devicename())))
+    Ok(ValRef::String(Rc::new(sys::hostname())))
 }
 
 fn login_name(_: Vec<ValRef>, _: &Rc<RefCell<Scope>>) -> Result<ValRef, String> {
