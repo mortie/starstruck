@@ -14,7 +14,7 @@ impl Shell {
     pub fn escape_start(self) -> &'static str {
         match self {
             Shell::None => "",
-            Shell::Bash => "\\[",
+            Shell::Bash => "\x01",
             Shell::Zsh => "%{",
         }
     }
@@ -22,7 +22,7 @@ impl Shell {
     pub fn escape_end(self) -> &'static str {
         match self {
             Shell::None => "",
-            Shell::Bash => "\\]",
+            Shell::Bash => "\x02",
             Shell::Zsh => "%}",
         }
     }
