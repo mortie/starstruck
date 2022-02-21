@@ -23,3 +23,15 @@ pub fn login_name() -> String {
         Err(_) => whoami::username(),
     }
 }
+
+#[cfg(not(target_os = "macos"))]
+pub use whoami::hostname;
+
+#[cfg(target_os = "macos")]
+pub fn hostname() -> String {
+    let un = whoami::hostname();
+    match un.strip_suffix(".local") {
+        Some(un) => un.to_string(),
+        _ => un,
+    }
+}

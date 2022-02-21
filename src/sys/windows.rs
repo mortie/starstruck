@@ -7,3 +7,5 @@ pub fn term_size() -> (i32, i32) {
 pub fn login_name() -> String {
     whomai::username()
 }
+
+pub use whoami::hostname;
