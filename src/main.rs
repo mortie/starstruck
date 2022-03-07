@@ -215,7 +215,7 @@ fn main() {
     let state = Rc::new(state);
     let printer = Rc::new(RefCell::new(Printer { column: 1, row: 1 }));
 
-    let scope = Rc::new(RefCell::new(eval::Scope::new(None)));
+    let scope = Rc::new(RefCell::new(eval::Scope::new()));
     stdlib::init(&scope);
     iolib::init(&scope);
     basic::init(&scope, &state);
