@@ -4,6 +4,7 @@ use std::env;
 use std::fs;
 use std::path::PathBuf;
 use std::rc::Rc;
+use std::io::{BufRead, BufReader};
 
 struct GitCtx {
     has_searched_gitdir: bool,
@@ -16,6 +17,28 @@ impl GitCtx {
             has_searched_gitdir: false,
             gitdir: None,
         }
+    }
+
+    fn find_gitdir_from_file(&mut self, mut path: PathBuf) -> Option<PathBuf> {
+        let f = match fs::File::open(&path) {
+            Err(..) => return None,
+            Ok(f) => f,
+        };
+
+        let content = match BufReader::new(f).lines().next() {
+            None => return None,
+            Some(content) => match content {
+                Err(..) => return None,
+                Ok(content) => content,
+            },
+        };
+
+        if let Some(p) = content.strip_prefix("gitdir: ") {
+            path.pop(); // Remove the .git component
+            return Some(path.join(p))
+        }
+
+        None
     }
 
     fn find_gitdir(&mut self) -> bool {
@@ -53,6 +76,10 @@ impl GitCtx {
                                 return true;
                             }
                         };
+                    } else if meta.is_file() {
+                        self.has_searched_gitdir = true;
+                        self.gitdir = self.find_gitdir_from_file(path);
+                        return self.gitdir.is_some();
                     }
                 }
                 Err(..) => (),
@@ -90,21 +117,26 @@ fn git_branch(ctx: &Rc<RefCell<GitCtx>>) -> Result<ValRef, String> {
     };
 
     path.push("HEAD");
-    let branch = match std::fs::read(path) {
+    let f = match fs::File::open(&path) {
         Err(..) => return Ok(ValRef::None),
-        Ok(contents) => match std::str::from_utf8(&contents[..]) {
+        Ok(f) => f,
+    };
+
+    let content = match BufReader::new(f).lines().next() {
+        None => return Ok(ValRef::None),
+        Some(content) => match content {
             Err(..) => return Ok(ValRef::None),
-            Ok(contents) => contents
-                .strip_prefix("ref: refs/heads/")
-                .and_then(|x| x.strip_suffix("\n"))
-                .map(|x| Rc::new(x.to_string())),
+            Ok(content) => content,
         },
     };
 
-    match branch {
-        Some(branch) => Ok(ValRef::String(branch)),
-        None => Ok(ValRef::None),
-    }
+    let branch = if let Some(branch) = content.strip_prefix("ref: refs/heads/") {
+        branch
+    } else {
+        &content[..8]
+    };
+
+    return Ok(ValRef::String(Rc::new(branch.to_string())))
 }
 
 pub fn init(scope: &Rc<RefCell<Scope>>) {
