@@ -52,6 +52,7 @@ fn print_ps1(
         ValRef::Lazy(..) => (),
         ValRef::ProtectedLazy(..) => (),
         ValRef::Number(num) => printer.borrow_mut().print(&format!("{}", num)),
+        ValRef::Bool(b) => printer.borrow_mut().print(&format!("{}", b)),
         ValRef::Map(..) => (),
         ValRef::List(lst) => {
             for item in lst.as_ref() {
@@ -226,12 +227,12 @@ fn main() {
         let s = printer.clone();
         scope.borrow_mut().put_lazy(
             "column",
-            Rc::new(move |_, _| Ok(ValRef::Number(s.borrow().column))),
+            Rc::new(move |_, _| Ok(ValRef::Number(s.borrow().column as f64))),
         );
         let s = printer.clone();
         scope.borrow_mut().put_lazy(
             "row",
-            Rc::new(move |_, _| Ok(ValRef::Number(s.borrow().row))),
+            Rc::new(move |_, _| Ok(ValRef::Number(s.borrow().row as f64))),
         );
     }
 

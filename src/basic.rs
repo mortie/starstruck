@@ -20,8 +20,8 @@ fn login_name(_: Vec<ValRef>, _: &Rc<RefCell<Scope>>) -> Result<ValRef, String> 
 
 fn is_remote(_: Vec<ValRef>, _: &Rc<RefCell<Scope>>) -> Result<ValRef, String> {
     match env::var("SSH_CLIENT") {
-        Ok(_) => Ok(ValRef::Number(1)),
-        Err(_) => Ok(ValRef::Number(0)),
+        Ok(_) => Ok(ValRef::Bool(true)),
+        Err(_) => Ok(ValRef::Bool(false)),
     }
 }
 
@@ -48,12 +48,12 @@ fn cwd(_: Vec<ValRef>, _: &Rc<RefCell<Scope>>) -> Result<ValRef, String> {
 
 fn term_width(_: Vec<ValRef>, _: &Rc<RefCell<Scope>>) -> Result<ValRef, String> {
     let (w, _) = sys::term_size();
-    Ok(ValRef::Number(w))
+    Ok(ValRef::Number(w as f64))
 }
 
 fn term_height(_: Vec<ValRef>, _: &Rc<RefCell<Scope>>) -> Result<ValRef, String> {
     let (_, h) = sys::term_size();
-    Ok(ValRef::Number(h))
+    Ok(ValRef::Number(h as f64))
 }
 
 fn getenv(args: Vec<ValRef>, _: &Rc<RefCell<Scope>>) -> Result<ValRef, String> {
@@ -76,7 +76,7 @@ fn getenv(args: Vec<ValRef>, _: &Rc<RefCell<Scope>>) -> Result<ValRef, String> {
 
 pub fn init(scope: &Rc<RefCell<Scope>>, state: &Rc<State>) {
     let mut s = scope.borrow_mut();
-    s.put("exit-code", ValRef::Number(state.exit_code as i32));
+    s.put("exit-code", ValRef::Number(state.exit_code as f64));
     s.put("space", ValRef::String(Rc::new(" ".to_string())));
     s.put_lazy("username", Rc::new(username));
     s.put_lazy("host", Rc::new(host));

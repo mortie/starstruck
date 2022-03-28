@@ -95,9 +95,9 @@ impl GitCtx {
 
 fn has_git(ctx: &Rc<RefCell<GitCtx>>) -> Result<ValRef, String> {
     if ctx.borrow_mut().find_gitdir() {
-        Ok(ValRef::Number(1))
+        Ok(ValRef::Bool(true))
     } else {
-        Ok(ValRef::Number(0))
+        Ok(ValRef::Bool(false))
     }
 }
 
