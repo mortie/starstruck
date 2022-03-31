@@ -4,8 +4,8 @@ mod unix;
 pub use unix::*;
 
 #[cfg(not(unix))]
-mod unix;
+mod windows;
 #[cfg(not(unix))]
-pub use unix::*;
+pub use windows::*;
 
 pub use whoami::username;
