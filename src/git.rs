@@ -1,4 +1,5 @@
-use osyris::eval::{Scope, ValRef};
+use osyris::eval::{Scope, ValRef, StackTrace};
+use osyris::bstring::BString;
 use std::cell::RefCell;
 use std::env;
 use std::fs;
@@ -93,7 +94,7 @@ impl GitCtx {
     }
 }
 
-fn has_git(ctx: &Rc<RefCell<GitCtx>>) -> Result<ValRef, String> {
+fn has_git(ctx: &Rc<RefCell<GitCtx>>) -> Result<ValRef, StackTrace> {
     if ctx.borrow_mut().find_gitdir() {
         Ok(ValRef::Bool(true))
     } else {
@@ -101,15 +102,15 @@ fn has_git(ctx: &Rc<RefCell<GitCtx>>) -> Result<ValRef, String> {
     }
 }
 
-fn git_dir(ctx: &Rc<RefCell<GitCtx>>) -> Result<ValRef, String> {
+fn git_dir(ctx: &Rc<RefCell<GitCtx>>) -> Result<ValRef, StackTrace> {
     ctx.borrow_mut().find_gitdir();
     match &ctx.borrow().gitdir {
-        Some(s) => Ok(ValRef::String(Rc::new(s.to_string_lossy().to_string()))),
+        Some(s) => Ok(ValRef::String(Rc::new(BString::from_os_str(s.as_os_str())))),
         None => Ok(ValRef::None),
     }
 }
 
-fn git_branch(ctx: &Rc<RefCell<GitCtx>>) -> Result<ValRef, String> {
+fn git_branch(ctx: &Rc<RefCell<GitCtx>>) -> Result<ValRef, StackTrace> {
     ctx.borrow_mut().find_gitdir();
     let mut path = match &ctx.borrow().gitdir {
         None => return Ok(ValRef::None),
@@ -122,7 +123,7 @@ fn git_branch(ctx: &Rc<RefCell<GitCtx>>) -> Result<ValRef, String> {
         Ok(f) => f,
     };
 
-    let content = match BufReader::new(f).lines().next() {
+    let content = match BufReader::new(f).split(b'\n').next() {
         None => return Ok(ValRef::None),
         Some(content) => match content {
             Err(..) => return Ok(ValRef::None),
@@ -130,13 +131,13 @@ fn git_branch(ctx: &Rc<RefCell<GitCtx>>) -> Result<ValRef, String> {
         },
     };
 
-    let branch = if let Some(branch) = content.strip_prefix("ref: refs/heads/") {
+    let branch = if let Some(branch) = content.strip_prefix(b"ref: refs/heads/") {
         branch
     } else {
         &content[..8]
     };
 
-    return Ok(ValRef::String(Rc::new(branch.to_string())))
+    return Ok(ValRef::String(Rc::new(BString::from_bytes(branch))))
 }
 
 pub fn init(scope: &Rc<RefCell<Scope>>) {

@@ -1,3 +1,5 @@
+use whoami;
+
 #[cfg(unix)]
 mod unix;
 #[cfg(unix)]

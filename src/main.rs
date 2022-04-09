@@ -5,8 +5,9 @@ mod state;
 mod sys;
 
 use dirs;
-use eval::{Scope, ValRef};
+use eval::{Scope, ValRef, StackTrace};
 use osyris::{eval, iolib, parse, stdlib};
+use osyris::bstring::BString;
 use std::cell::RefCell;
 use std::env;
 use std::fs;
@@ -46,7 +47,7 @@ fn print_ps1(
     printer: &Rc<RefCell<Printer>>,
     val: ValRef,
     scope: &Rc<RefCell<Scope>>,
-) -> Result<(), String> {
+) -> Result<(), StackTrace> {
     match val {
         ValRef::None => (),
         ValRef::Lazy(..) => (),
@@ -59,20 +60,19 @@ fn print_ps1(
                 print_ps1(&printer, item.clone(), scope)?;
             }
         }
-        ValRef::String(s) => printer.borrow_mut().print(s.as_ref()),
-        ValRef::Func(func) => {
-            let args = Vec::new();
-            print_ps1(printer, func(args, scope)?, scope)?
-        }
-        ValRef::Quote(exprs) => {
-            print_ps1(printer, eval::eval_call(exprs.as_ref(), scope)?, scope)?;
-        }
+        ValRef::String(s) => printer.borrow_mut().print(&String::from_utf8_lossy(s.as_bytes()).to_string()),
         ValRef::Native(n) => {
             if let Some(us) = n.as_ref().downcast_ref::<UncountedString>() {
                 printer.borrow().print_uncounted(&us.s);
             }
         }
         ValRef::Port(..) => (),
+        ValRef::Block(exprs) => {
+            for expr in exprs.iter() {
+                print_ps1(printer, eval::eval(expr, scope)?, scope)?;
+            }
+        },
+        _ => print_ps1(printer, eval::call(val, &[], scope)?, scope)?,
     }
 
     Ok(())
@@ -107,13 +107,13 @@ fn find_config_path() -> Option<PathBuf> {
 
         let mut path = dir.clone();
         path.push("starstruck");
-        path.push("main.lsp");
+        path.push("main.os");
         if Path::exists(&path) {
             return Some(path);
         }
 
         let mut path = dir;
-        path.push("starstruck.lsp");
+        path.push("starstruck.os");
         if Path::exists(&path) {
             return Some(path);
         }
@@ -236,7 +236,7 @@ fn main() {
         );
     }
 
-    let mut reader = parse::Reader::new(&file_string.as_bytes());
+    let mut reader = parse::Reader::new(&file_string.as_bytes(), BString::from_str(&file_string));
     let retval = match execute_file(&mut reader, &scope) {
         Ok(val) => val,
         Err(err) => {

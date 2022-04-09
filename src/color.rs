@@ -1,6 +1,6 @@
 use super::state::State;
 use super::UncountedString;
-use osyris::eval::{Scope, ValRef};
+use osyris::eval::{Scope, ValRef, StackTrace};
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -37,7 +37,7 @@ impl ColorCtx {
     }
 }
 
-fn push_color(ctx: &Rc<RefCell<ColorCtx>>, col: &'static str) -> Result<ValRef, String> {
+fn push_color(ctx: &Rc<RefCell<ColorCtx>>, col: &'static str) -> Result<ValRef, StackTrace> {
     ctx.borrow_mut().stack.push(col);
     let c = ctx.borrow();
     let escape_start = c.state.shell.escape_start();
@@ -49,7 +49,7 @@ fn push_color(ctx: &Rc<RefCell<ColorCtx>>, col: &'static str) -> Result<ValRef, 
     Ok(ValRef::Native(Rc::new(UncountedString { s })))
 }
 
-fn pop_color(ctx: &Rc<RefCell<ColorCtx>>) -> Result<ValRef, String> {
+fn pop_color(ctx: &Rc<RefCell<ColorCtx>>) -> Result<ValRef, StackTrace> {
     ctx.borrow_mut().stack.pop();
     let c = ctx.borrow();
     let escape_start = c.state.shell.escape_start();
@@ -65,8 +65,8 @@ fn pop_color(ctx: &Rc<RefCell<ColorCtx>>) -> Result<ValRef, String> {
 fn color(
     ctx: &Rc<RefCell<ColorCtx>>,
     col: &'static str,
-    args: Vec<ValRef>,
-) -> Result<ValRef, String> {
+    args: &[ValRef],
+) -> Result<ValRef, StackTrace> {
     let mut ret: Vec<ValRef> = Vec::new();
 
     {
@@ -74,7 +74,7 @@ fn color(
         ret.push(ValRef::Func(Rc::new(move |_, _| push_color(&c, col))));
     }
 
-    ret.push(ValRef::List(Rc::new(args)));
+    ret.push(ValRef::List(Rc::new(args.to_vec())));
 
     {
         let c = ctx.clone();
