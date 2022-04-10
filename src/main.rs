@@ -5,9 +5,9 @@ mod state;
 mod sys;
 
 use dirs;
-use eval::{Scope, ValRef, StackTrace};
-use osyris::{eval, iolib, parse, stdlib};
+use eval::{Scope, StackTrace, ValRef};
 use osyris::bstring::BString;
+use osyris::{eval, iolib, parse, stdlib};
 use std::cell::RefCell;
 use std::env;
 use std::fs;
@@ -54,13 +54,15 @@ fn print_ps1(
         ValRef::ProtectedLazy(..) => (),
         ValRef::Number(num) => printer.borrow_mut().print(&format!("{}", num)),
         ValRef::Bool(b) => printer.borrow_mut().print(&format!("{}", b)),
-        ValRef::Map(..) => (),
+        ValRef::Dict(..) => (),
         ValRef::List(lst) => {
-            for item in lst.as_ref() {
+            for item in lst.borrow().iter() {
                 print_ps1(&printer, item.clone(), scope)?;
             }
         }
-        ValRef::String(s) => printer.borrow_mut().print(&String::from_utf8_lossy(s.as_bytes()).to_string()),
+        ValRef::String(s) => printer
+            .borrow_mut()
+            .print(&String::from_utf8_lossy(s.as_bytes()).to_string()),
         ValRef::Native(n) => {
             if let Some(us) = n.as_ref().downcast_ref::<UncountedString>() {
                 printer.borrow().print_uncounted(&us.s);
@@ -71,7 +73,7 @@ fn print_ps1(
             for expr in exprs.iter() {
                 print_ps1(printer, eval::eval(expr, scope)?, scope)?;
             }
-        },
+        }
         _ => print_ps1(printer, eval::call(val, &[], scope)?, scope)?,
     }
 

@@ -1,22 +1,28 @@
 use super::state::State;
 use super::sys;
 use dirs;
-use osyris::eval::{Scope, ValRef, StackTrace};
 use osyris::bstring::BString;
+use osyris::eval::{Scope, StackTrace, ValRef};
 use std::cell::RefCell;
 use std::env;
 use std::rc::Rc;
 
 fn username(_: &[ValRef], _: &Rc<RefCell<Scope>>) -> Result<ValRef, StackTrace> {
-    Ok(ValRef::String(Rc::new(BString::from_string(sys::username()))))
+    Ok(ValRef::String(Rc::new(BString::from_string(
+        sys::username(),
+    ))))
 }
 
 fn host(_: &[ValRef], _: &Rc<RefCell<Scope>>) -> Result<ValRef, StackTrace> {
-    Ok(ValRef::String(Rc::new(BString::from_string(sys::hostname()))))
+    Ok(ValRef::String(Rc::new(BString::from_string(
+        sys::hostname(),
+    ))))
 }
 
 fn login_name(_: &[ValRef], _: &Rc<RefCell<Scope>>) -> Result<ValRef, StackTrace> {
-    Ok(ValRef::String(Rc::new(BString::from_string(sys::login_name()))))
+    Ok(ValRef::String(Rc::new(BString::from_string(
+        sys::login_name(),
+    ))))
 }
 
 fn is_remote(_: &[ValRef], _: &Rc<RefCell<Scope>>) -> Result<ValRef, StackTrace> {
@@ -69,7 +75,12 @@ fn getenv(args: &[ValRef], _: &Rc<RefCell<Scope>>) -> Result<ValRef, StackTrace>
 
     let val = match env::var(key.to_os_str()) {
         Ok(val) => BString::from_string(val),
-        Err(err) => return Err(StackTrace::from_string(format!("'getenv' failed with key '{}': {}", key, err))),
+        Err(err) => {
+            return Err(StackTrace::from_string(format!(
+                "'getenv' failed with key '{}': {}",
+                key, err
+            )))
+        }
     };
 
     Ok(ValRef::String(Rc::new(val)))

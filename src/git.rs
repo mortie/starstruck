@@ -1,11 +1,11 @@
-use osyris::eval::{Scope, ValRef, StackTrace};
 use osyris::bstring::BString;
+use osyris::eval::{Scope, StackTrace, ValRef};
 use std::cell::RefCell;
 use std::env;
 use std::fs;
+use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use std::rc::Rc;
-use std::io::{BufRead, BufReader};
 
 struct GitCtx {
     has_searched_gitdir: bool,
@@ -36,7 +36,7 @@ impl GitCtx {
 
         if let Some(p) = content.strip_prefix("gitdir: ") {
             path.pop(); // Remove the .git component
-            return Some(path.join(p))
+            return Some(path.join(p));
         }
 
         None
@@ -137,7 +137,7 @@ fn git_branch(ctx: &Rc<RefCell<GitCtx>>) -> Result<ValRef, StackTrace> {
         &content[..8]
     };
 
-    return Ok(ValRef::String(Rc::new(BString::from_bytes(branch))))
+    return Ok(ValRef::String(Rc::new(BString::from_bytes(branch))));
 }
 
 pub fn init(scope: &Rc<RefCell<Scope>>) {

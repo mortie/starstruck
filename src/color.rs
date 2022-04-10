@@ -1,6 +1,6 @@
 use super::state::State;
 use super::UncountedString;
-use osyris::eval::{Scope, ValRef, StackTrace};
+use osyris::eval::{Scope, StackTrace, ValRef};
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -74,14 +74,14 @@ fn color(
         ret.push(ValRef::Func(Rc::new(move |_, _| push_color(&c, col))));
     }
 
-    ret.push(ValRef::List(Rc::new(args.to_vec())));
+    ret.push(ValRef::List(Rc::new(RefCell::new(args.to_vec()))));
 
     {
         let c = ctx.clone();
         ret.push(ValRef::Func(Rc::new(move |_, _| pop_color(&c))));
     }
 
-    Ok(ValRef::List(Rc::new(ret)))
+    Ok(ValRef::List(Rc::new(RefCell::new(ret))))
 }
 
 pub fn init(scope: &Rc<RefCell<Scope>>, state: &Rc<State>) {
