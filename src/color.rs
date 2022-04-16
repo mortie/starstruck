@@ -65,7 +65,7 @@ fn pop_color(ctx: &Rc<RefCell<ColorCtx>>) -> Result<ValRef, StackTrace> {
 fn color(
     ctx: &Rc<RefCell<ColorCtx>>,
     col: &'static str,
-    args: &[ValRef],
+    args: Vec<ValRef>,
 ) -> Result<ValRef, StackTrace> {
     let mut ret: Vec<ValRef> = Vec::new();
 

@@ -74,7 +74,7 @@ fn print_ps1(
                 print_ps1(printer, eval::eval(expr, scope)?, scope)?;
             }
         }
-        _ => print_ps1(printer, eval::call(val, &[], scope)?, scope)?,
+        _ => print_ps1(printer, eval::call(&val, vec![], scope)?, scope)?,
     }
 
     Ok(())
@@ -238,7 +238,7 @@ fn main() {
         );
     }
 
-    let mut reader = parse::Reader::new(&file_string.as_bytes(), BString::from_str(&file_string));
+    let mut reader = parse::Reader::new(&file_string.as_bytes(), BString::from_os_str(config_path.as_os_str()));
     let retval = match execute_file(&mut reader, &scope) {
         Ok(val) => val,
         Err(err) => {

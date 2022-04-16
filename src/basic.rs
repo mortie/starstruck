@@ -7,25 +7,25 @@ use std::cell::RefCell;
 use std::env;
 use std::rc::Rc;
 
-fn username(_: &[ValRef], _: &Rc<RefCell<Scope>>) -> Result<ValRef, StackTrace> {
+fn username(_: Vec<ValRef>, _: &Rc<RefCell<Scope>>) -> Result<ValRef, StackTrace> {
     Ok(ValRef::String(Rc::new(BString::from_string(
         sys::username(),
     ))))
 }
 
-fn host(_: &[ValRef], _: &Rc<RefCell<Scope>>) -> Result<ValRef, StackTrace> {
+fn host(_: Vec<ValRef>, _: &Rc<RefCell<Scope>>) -> Result<ValRef, StackTrace> {
     Ok(ValRef::String(Rc::new(BString::from_string(
         sys::hostname(),
     ))))
 }
 
-fn login_name(_: &[ValRef], _: &Rc<RefCell<Scope>>) -> Result<ValRef, StackTrace> {
+fn login_name(_: Vec<ValRef>, _: &Rc<RefCell<Scope>>) -> Result<ValRef, StackTrace> {
     Ok(ValRef::String(Rc::new(BString::from_string(
         sys::login_name(),
     ))))
 }
 
-fn is_remote(_: &[ValRef], _: &Rc<RefCell<Scope>>) -> Result<ValRef, StackTrace> {
+fn is_remote(_: Vec<ValRef>, _: &Rc<RefCell<Scope>>) -> Result<ValRef, StackTrace> {
     match env::var("SSH_CLIENT") {
         Ok(_) => Ok(ValRef::Bool(true)),
         Err(_) => Ok(ValRef::Bool(false)),
@@ -44,7 +44,7 @@ fn replace_home_path(path: BString) -> BString {
     }
 }
 
-fn cwd(_: &[ValRef], _: &Rc<RefCell<Scope>>) -> Result<ValRef, StackTrace> {
+fn cwd(_: Vec<ValRef>, _: &Rc<RefCell<Scope>>) -> Result<ValRef, StackTrace> {
     let wd = match env::current_dir() {
         Ok(wd) => replace_home_path(BString::from_os_str(wd.as_os_str())),
         Err(..) => BString::from_str(""),
@@ -53,17 +53,17 @@ fn cwd(_: &[ValRef], _: &Rc<RefCell<Scope>>) -> Result<ValRef, StackTrace> {
     Ok(ValRef::String(Rc::new(replace_home_path(wd))))
 }
 
-fn term_width(_: &[ValRef], _: &Rc<RefCell<Scope>>) -> Result<ValRef, StackTrace> {
+fn term_width(_: Vec<ValRef>, _: &Rc<RefCell<Scope>>) -> Result<ValRef, StackTrace> {
     let (w, _) = sys::term_size();
     Ok(ValRef::Number(w as f64))
 }
 
-fn term_height(_: &[ValRef], _: &Rc<RefCell<Scope>>) -> Result<ValRef, StackTrace> {
+fn term_height(_: Vec<ValRef>, _: &Rc<RefCell<Scope>>) -> Result<ValRef, StackTrace> {
     let (_, h) = sys::term_size();
     Ok(ValRef::Number(h as f64))
 }
 
-fn getenv(args: &[ValRef], _: &Rc<RefCell<Scope>>) -> Result<ValRef, StackTrace> {
+fn getenv(args: Vec<ValRef>, _: &Rc<RefCell<Scope>>) -> Result<ValRef, StackTrace> {
     if args.len() != 1 {
         return Err(StackTrace::from_str("'getenv' requires 1 argument"));
     }

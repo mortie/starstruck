@@ -28,7 +28,7 @@
 
 	; Prompt character
 	(if [exit-code == 0]
-		(bold-green "$")
-		(bold-red "$"))
+		{(bold-green "$")}
+		{(bold-red "$")})
 	space
 }
