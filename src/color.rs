@@ -71,14 +71,18 @@ fn color(
 
     {
         let c = ctx.clone();
-        ret.push(ValRef::Func(Rc::new(move |_, _| push_color(&c, col))));
+        ret.push(ValRef::Func(Rc::new(move |_, scope| {
+            Ok((push_color(&c, col)?, scope))
+        })));
     }
 
     ret.push(ValRef::List(Rc::new(RefCell::new(args.to_vec()))));
 
     {
         let c = ctx.clone();
-        ret.push(ValRef::Func(Rc::new(move |_, _| pop_color(&c))));
+        ret.push(ValRef::Func(Rc::new(move |_, scope| {
+            Ok((pop_color(&c)?, scope))
+        })));
     }
 
     Ok(ValRef::List(Rc::new(RefCell::new(ret))))
@@ -92,7 +96,9 @@ pub fn init(scope: &Rc<RefCell<Scope>>, state: &Rc<State>) {
             let c = ctx.clone();
             scope
                 .borrow_mut()
-                .put_func($name, Rc::new(move |a, _| color(&c, $color, a)));
+                .put_func($name, Rc::new(move |a, scope| {
+                    Ok((color(&c, $color, a)?, scope))
+                }));
         };
     }
 

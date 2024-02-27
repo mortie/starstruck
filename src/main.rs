@@ -45,9 +45,9 @@ impl Printer {
 
 fn print_ps1(
     printer: &Rc<RefCell<Printer>>,
-    val: ValRef,
-    scope: &Rc<RefCell<Scope>>,
-) -> Result<(), StackTrace> {
+    mut val: ValRef,
+    mut scope: Rc<RefCell<Scope>>,
+) -> Result<Rc<RefCell<Scope>>, StackTrace> {
     match val {
         ValRef::None => (),
         ValRef::Lazy(..) => (),
@@ -57,7 +57,7 @@ fn print_ps1(
         ValRef::Dict(..) => (),
         ValRef::List(lst) => {
             for item in lst.borrow().iter() {
-                print_ps1(&printer, item.clone(), scope)?;
+                scope = print_ps1(&printer, item.clone(), scope)?;
             }
         }
         ValRef::String(s) => printer
@@ -71,16 +71,20 @@ fn print_ps1(
         ValRef::Port(..) => (),
         ValRef::Block(exprs) => {
             for expr in exprs.iter() {
-                print_ps1(printer, eval::eval(expr, scope)?, scope)?;
+                (val, scope) = eval::eval(expr, scope)?;
+                scope = print_ps1(printer, val, scope)?;
             }
         }
-        _ => print_ps1(printer, eval::call(&val, vec![], scope)?, scope)?,
-    }
+        _ => {
+            (val, scope) = eval::call(&val, vec![], scope)?;
+            scope = print_ps1(printer, val, scope)?;
+        }
+    };
 
-    Ok(())
+    Ok(scope)
 }
 
-fn execute_file(reader: &mut parse::Reader, scope: &Rc<RefCell<Scope>>) -> Result<ValRef, String> {
+fn execute_file(reader: &mut parse::Reader, mut scope: Rc<RefCell<Scope>>) -> Result<ValRef, String> {
     let mut retval = ValRef::None;
     loop {
         let expr = match parse::parse(reader) {
@@ -96,9 +100,12 @@ fn execute_file(reader: &mut parse::Reader, scope: &Rc<RefCell<Scope>>) -> Resul
             }
         };
 
-        match eval::eval(&expr, &scope) {
+        match eval::eval(&expr, scope) {
             Err(err) => return Err(format!("Error: {}", err)),
-            Ok(val) => retval = val,
+            Ok((val, s)) => {
+                retval = val;
+                scope = s;
+            }
         }
     }
 }
@@ -229,17 +236,17 @@ fn main() {
         let s = printer.clone();
         scope.borrow_mut().put_lazy(
             "column",
-            Rc::new(move |_, _| Ok(ValRef::Number(s.borrow().column as f64))),
+            Rc::new(move |_, scope| Ok((ValRef::Number(s.borrow().column as f64), scope))),
         );
         let s = printer.clone();
         scope.borrow_mut().put_lazy(
             "row",
-            Rc::new(move |_, _| Ok(ValRef::Number(s.borrow().row as f64))),
+            Rc::new(move |_, scope| Ok((ValRef::Number(s.borrow().row as f64), scope))),
         );
     }
 
     let mut reader = parse::Reader::new(&file_string.as_bytes(), BString::from_os_str(config_path.as_os_str()));
-    let retval = match execute_file(&mut reader, &scope) {
+    let retval = match execute_file(&mut reader, scope.clone()) {
         Ok(val) => val,
         Err(err) => {
             eprintln!("{}", err);
@@ -247,7 +254,7 @@ fn main() {
         }
     };
 
-    match print_ps1(&printer, retval, &scope) {
+    match print_ps1(&printer, retval, scope) {
         Err(err) => {
             eprintln!("Error: {}", err);
             return;

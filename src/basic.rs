@@ -2,33 +2,33 @@ use super::state::State;
 use super::sys;
 use dirs;
 use osyris::bstring::BString;
-use osyris::eval::{Scope, StackTrace, ValRef};
+use osyris::eval::{Scope, StackTrace, ValRef, FuncResult};
 use std::cell::RefCell;
 use std::env;
 use std::rc::Rc;
 
-fn username(_: Vec<ValRef>, _: &Rc<RefCell<Scope>>) -> Result<ValRef, StackTrace> {
-    Ok(ValRef::String(Rc::new(BString::from_string(
+fn username(_: Vec<ValRef>, scope: Rc<RefCell<Scope>>) -> FuncResult {
+    Ok((ValRef::String(Rc::new(BString::from_string(
         sys::username(),
-    ))))
+    ))), scope))
 }
 
-fn host(_: Vec<ValRef>, _: &Rc<RefCell<Scope>>) -> Result<ValRef, StackTrace> {
-    Ok(ValRef::String(Rc::new(BString::from_string(
+fn host(_: Vec<ValRef>, scope: Rc<RefCell<Scope>>) -> FuncResult {
+    Ok((ValRef::String(Rc::new(BString::from_string(
         sys::hostname(),
-    ))))
+    ))), scope))
 }
 
-fn login_name(_: Vec<ValRef>, _: &Rc<RefCell<Scope>>) -> Result<ValRef, StackTrace> {
-    Ok(ValRef::String(Rc::new(BString::from_string(
+fn login_name(_: Vec<ValRef>, scope: Rc<RefCell<Scope>>) -> FuncResult {
+    Ok((ValRef::String(Rc::new(BString::from_string(
         sys::login_name(),
-    ))))
+    ))), scope))
 }
 
-fn is_remote(_: Vec<ValRef>, _: &Rc<RefCell<Scope>>) -> Result<ValRef, StackTrace> {
+fn is_remote(_: Vec<ValRef>, scope: Rc<RefCell<Scope>>) -> FuncResult {
     match env::var("SSH_CLIENT") {
-        Ok(_) => Ok(ValRef::Bool(true)),
-        Err(_) => Ok(ValRef::Bool(false)),
+        Ok(_) => Ok((ValRef::Bool(true), scope)),
+        Err(_) => Ok((ValRef::Bool(false), scope)),
     }
 }
 
@@ -44,26 +44,26 @@ fn replace_home_path(path: BString) -> BString {
     }
 }
 
-fn cwd(_: Vec<ValRef>, _: &Rc<RefCell<Scope>>) -> Result<ValRef, StackTrace> {
+fn cwd(_: Vec<ValRef>, scope: Rc<RefCell<Scope>>) -> FuncResult {
     let wd = match env::current_dir() {
         Ok(wd) => replace_home_path(BString::from_os_str(wd.as_os_str())),
         Err(..) => BString::from_str(""),
     };
 
-    Ok(ValRef::String(Rc::new(replace_home_path(wd))))
+    Ok((ValRef::String(Rc::new(replace_home_path(wd))), scope))
 }
 
-fn term_width(_: Vec<ValRef>, _: &Rc<RefCell<Scope>>) -> Result<ValRef, StackTrace> {
+fn term_width(_: Vec<ValRef>, scope: Rc<RefCell<Scope>>) -> FuncResult {
     let (w, _) = sys::term_size();
-    Ok(ValRef::Number(w as f64))
+    Ok((ValRef::Number(w as f64), scope))
 }
 
-fn term_height(_: Vec<ValRef>, _: &Rc<RefCell<Scope>>) -> Result<ValRef, StackTrace> {
+fn term_height(_: Vec<ValRef>, stack: Rc<RefCell<Scope>>) -> FuncResult {
     let (_, h) = sys::term_size();
-    Ok(ValRef::Number(h as f64))
+    Ok((ValRef::Number(h as f64), stack))
 }
 
-fn getenv(args: Vec<ValRef>, _: &Rc<RefCell<Scope>>) -> Result<ValRef, StackTrace> {
+fn getenv(args: Vec<ValRef>, stack: Rc<RefCell<Scope>>) -> FuncResult {
     if args.len() != 1 {
         return Err(StackTrace::from_str("'getenv' requires 1 argument"));
     }
@@ -83,7 +83,7 @@ fn getenv(args: Vec<ValRef>, _: &Rc<RefCell<Scope>>) -> Result<ValRef, StackTrac
         }
     };
 
-    Ok(ValRef::String(Rc::new(val)))
+    Ok((ValRef::String(Rc::new(val)), stack))
 }
 
 pub fn init(scope: &Rc<RefCell<Scope>>, state: &Rc<State>) {
