@@ -110,35 +110,33 @@ fn execute_file(reader: &mut parse::Reader, mut scope: Rc<RefCell<Scope>>) -> Re
     }
 }
 
+fn find_config_path_from_base(base: PathBuf) -> Option<PathBuf> {
+    let mut path = base.clone();
+    path.push("starstruck");
+    path.push("main.lsp");
+    if Path::exists(&path) {
+        return Some(path);
+    }
+
+    let mut path = base;
+    path.push("starstruck.lsp");
+    if Path::exists(&path) {
+        return Some(path);
+    }
+
+    None
+}
+
 fn find_config_path() -> Option<PathBuf> {
-    if let Some(mut dir) = dirs::home_dir() {
-        dir.push(".config");
-
-        let mut path = dir.clone();
-        path.push("starstruck");
-        path.push("main.os");
-        if Path::exists(&path) {
-            return Some(path);
-        }
-
-        let mut path = dir;
-        path.push("starstruck.os");
-        if Path::exists(&path) {
+    if let Some(dir) = dirs::config_dir() {
+        if let Some(path) = find_config_path_from_base(dir) {
             return Some(path);
         }
     }
 
-    if let Some(dir) = dirs::config_dir() {
-        let mut path = dir.clone();
-        path.push("starstruck");
-        path.push("main.lsp");
-        if Path::exists(&path) {
-            return Some(path);
-        }
-
-        let mut path = dir;
-        path.push("starstruck.lsp");
-        if Path::exists(&path) {
+    if let Some(mut dir) = dirs::home_dir() {
+        dir.push(".config");
+        if let Some(path) = find_config_path_from_base(dir) {
             return Some(path);
         }
     }
@@ -172,7 +170,9 @@ fn main() {
         if arg == "-h" || arg == "--help" {
             usage(argv0);
             return;
-        } else if arg == "-c" {
+        }
+
+        if arg == "-c" {
             config_path = match args.next() {
                 Some(p) => Some(PathBuf::from(p)),
                 None => {
