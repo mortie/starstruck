@@ -94,11 +94,10 @@ pub fn init(scope: &Rc<RefCell<Scope>>, state: &Rc<State>) {
     macro_rules! put {
         ($name: expr, $color: expr) => {
             let c = ctx.clone();
-            scope
-                .borrow_mut()
-                .put_func($name, Rc::new(move |a, scope| {
-                    Ok((color(&c, $color, a)?, scope))
-                }));
+            scope.borrow_mut().put_func(
+                $name,
+                Rc::new(move |a, scope| Ok((color(&c, $color, a)?, scope))),
+            );
         };
     }
 

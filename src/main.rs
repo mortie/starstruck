@@ -84,7 +84,10 @@ fn print_ps1(
     Ok(scope)
 }
 
-fn execute_file(reader: &mut parse::Reader, mut scope: Rc<RefCell<Scope>>) -> Result<ValRef, String> {
+fn execute_file(
+    reader: &mut parse::Reader,
+    mut scope: Rc<RefCell<Scope>>,
+) -> Result<ValRef, String> {
     let mut retval = ValRef::None;
     loop {
         let expr = match parse::parse(reader) {
@@ -245,7 +248,10 @@ fn main() {
         );
     }
 
-    let mut reader = parse::Reader::new(&file_string.as_bytes(), BString::from_os_str(config_path.as_os_str()));
+    let mut reader = parse::Reader::new(
+        &file_string.as_bytes(),
+        BString::from_os_str(config_path.as_os_str()),
+    );
     let retval = match execute_file(&mut reader, scope.clone()) {
         Ok(val) => val,
         Err(err) => {

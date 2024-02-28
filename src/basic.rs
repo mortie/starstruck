@@ -2,27 +2,30 @@ use super::state::State;
 use super::sys;
 use dirs;
 use osyris::bstring::BString;
-use osyris::eval::{Scope, StackTrace, ValRef, FuncResult};
+use osyris::eval::{FuncResult, Scope, StackTrace, ValRef};
 use std::cell::RefCell;
 use std::env;
 use std::rc::Rc;
 
 fn username(_: Vec<ValRef>, scope: Rc<RefCell<Scope>>) -> FuncResult {
-    Ok((ValRef::String(Rc::new(BString::from_string(
-        sys::username(),
-    ))), scope))
+    Ok((
+        ValRef::String(Rc::new(BString::from_string(sys::username()))),
+        scope,
+    ))
 }
 
 fn host(_: Vec<ValRef>, scope: Rc<RefCell<Scope>>) -> FuncResult {
-    Ok((ValRef::String(Rc::new(BString::from_string(
-        sys::hostname(),
-    ))), scope))
+    Ok((
+        ValRef::String(Rc::new(BString::from_string(sys::hostname()))),
+        scope,
+    ))
 }
 
 fn login_name(_: Vec<ValRef>, scope: Rc<RefCell<Scope>>) -> FuncResult {
-    Ok((ValRef::String(Rc::new(BString::from_string(
-        sys::login_name(),
-    ))), scope))
+    Ok((
+        ValRef::String(Rc::new(BString::from_string(sys::login_name()))),
+        scope,
+    ))
 }
 
 fn is_remote(_: Vec<ValRef>, scope: Rc<RefCell<Scope>>) -> FuncResult {

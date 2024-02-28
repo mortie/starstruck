@@ -148,9 +148,7 @@ pub fn init(scope: &Rc<RefCell<Scope>>) {
             let c = ctx.clone();
             scope
                 .borrow_mut()
-                .put_lazy($name, Rc::new(move |_, scope| {
-                    Ok(($func(&c)?, scope))
-                }));
+                .put_lazy($name, Rc::new(move |_, scope| Ok(($func(&c)?, scope))));
         };
     }
 
