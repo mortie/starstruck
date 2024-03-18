@@ -140,19 +140,18 @@ fn git_branch(ctx: &Rc<RefCell<GitCtx>>) -> Result<ValRef, StackTrace> {
     return Ok(ValRef::String(Rc::new(BString::from_bytes(branch))));
 }
 
-pub fn init(scope: &Rc<RefCell<Scope>>) {
+pub fn init(mut scope: Scope) -> Scope {
     let ctx = Rc::new(RefCell::new(GitCtx::new()));
 
     macro_rules! put {
         ($name: expr, $func: expr) => {
             let c = ctx.clone();
-            scope
-                .borrow_mut()
-                .put_lazy($name, Rc::new(move |_, scope| Ok(($func(&c)?, scope))));
+            scope = scope.put_lazy($name, Rc::new(move |_, scope| Ok(($func(&c)?, scope))));
         };
     }
 
     put!("has-git?", has_git);
     put!("git-dir", git_dir);
     put!("git-branch", git_branch);
+    scope
 }

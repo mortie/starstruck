@@ -46,8 +46,8 @@ impl Printer {
 fn print_ps1(
     printer: &Rc<RefCell<Printer>>,
     mut val: ValRef,
-    mut scope: Rc<RefCell<Scope>>,
-) -> Result<Rc<RefCell<Scope>>, StackTrace> {
+    mut scope: Scope,
+) -> Result<Scope, StackTrace> {
     match val {
         ValRef::None => (),
         ValRef::Lazy(..) => (),
@@ -84,10 +84,7 @@ fn print_ps1(
     Ok(scope)
 }
 
-fn execute_file(
-    reader: &mut parse::Reader,
-    mut scope: Rc<RefCell<Scope>>,
-) -> Result<ValRef, String> {
+fn execute_file(reader: &mut parse::Reader, mut scope: Scope) -> Result<ValRef, String> {
     let mut retval = ValRef::None;
     loop {
         let expr = match parse::parse(reader) {
@@ -228,21 +225,21 @@ fn main() {
     let state = Rc::new(state);
     let printer = Rc::new(RefCell::new(Printer { column: 1, row: 1 }));
 
-    let scope = Rc::new(RefCell::new(eval::Scope::new()));
-    stdlib::init(&scope);
-    iolib::init(&scope);
-    basic::init(&scope, &state);
-    color::init(&scope, &state);
-    git::init(&scope);
+    let mut scope = eval::Scope::new();
+    scope = stdlib::init(scope);
+    scope = iolib::init(scope);
+    scope = basic::init(scope, &state);
+    scope = color::init(scope, &state);
+    scope = git::init(scope);
 
     {
         let s = printer.clone();
-        scope.borrow_mut().put_lazy(
+        scope = scope.put_lazy(
             "column",
             Rc::new(move |_, scope| Ok((ValRef::Number(s.borrow().column as f64), scope))),
         );
         let s = printer.clone();
-        scope.borrow_mut().put_lazy(
+        scope = scope.put_lazy(
             "row",
             Rc::new(move |_, scope| Ok((ValRef::Number(s.borrow().row as f64), scope))),
         );

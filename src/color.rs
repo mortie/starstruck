@@ -88,13 +88,13 @@ fn color(
     Ok(ValRef::List(Rc::new(RefCell::new(ret))))
 }
 
-pub fn init(scope: &Rc<RefCell<Scope>>, state: &Rc<State>) {
+pub fn init(mut scope: Scope, state: &Rc<State>) -> Scope {
     let ctx = Rc::new(RefCell::new(ColorCtx::new(state.clone())));
 
     macro_rules! put {
         ($name: expr, $color: expr) => {
             let c = ctx.clone();
-            scope.borrow_mut().put_func(
+            scope = scope.put_func(
                 $name,
                 Rc::new(move |a, scope| Ok((color(&c, $color, a)?, scope))),
             );
@@ -119,4 +119,6 @@ pub fn init(scope: &Rc<RefCell<Scope>>, state: &Rc<State>) {
     put!("bold-magenta", BOLD_MAGENTA);
     put!("bold-cyan", BOLD_CYAN);
     put!("bold-white", BOLD_WHITE);
+
+    scope
 }
