@@ -10,6 +10,7 @@ use std::rc::Rc;
 struct GitCtx {
     has_searched_gitdir: bool,
     gitdir: Option<PathBuf>,
+    workdir: Option<PathBuf>,
 }
 
 impl GitCtx {
@@ -17,6 +18,7 @@ impl GitCtx {
         Self {
             has_searched_gitdir: false,
             gitdir: None,
+            workdir: None,
         }
     }
 
@@ -35,7 +37,7 @@ impl GitCtx {
         };
 
         if let Some(p) = content.strip_prefix("gitdir: ") {
-            path.pop(); // Remove the .git component
+            path.pop(); // Remove the .git component of the parent dir
             return Some(path.join(p));
         }
 
@@ -50,7 +52,6 @@ impl GitCtx {
         let cwd = match env::current_dir() {
             Ok(dir) => dir,
             Err(..) => {
-                self.gitdir = None;
                 return false;
             }
         };
@@ -73,13 +74,16 @@ impl GitCtx {
                         match path.to_str() {
                             None => return false,
                             Some(..) => {
-                                self.gitdir = Some(path);
+                                self.gitdir = Some(path.clone());
+                                path.pop();
+                                self.workdir = Some(path);
                                 return true;
                             }
                         };
                     } else if meta.is_file() {
                         self.has_searched_gitdir = true;
                         self.gitdir = self.find_gitdir_from_file(path);
+                        self.workdir = self.gitdir.clone();
                         return self.gitdir.is_some();
                     }
                 }
@@ -105,7 +109,19 @@ fn has_git(ctx: &Rc<RefCell<GitCtx>>) -> Result<ValRef, StackTrace> {
 fn git_dir(ctx: &Rc<RefCell<GitCtx>>) -> Result<ValRef, StackTrace> {
     ctx.borrow_mut().find_gitdir();
     match &ctx.borrow().gitdir {
-        Some(s) => Ok(ValRef::String(Rc::new(BString::from_os_str(s.as_os_str())))),
+        Some(dir) => {
+            Ok(ValRef::String(Rc::new(BString::from_os_str(dir.as_os_str()))))
+        }
+        None => Ok(ValRef::None),
+    }
+}
+
+fn git_workdir(ctx: &Rc<RefCell<GitCtx>>) -> Result<ValRef, StackTrace> {
+    ctx.borrow_mut().find_gitdir();
+    match &ctx.borrow().workdir {
+        Some(dir) => {
+            Ok(ValRef::String(Rc::new(BString::from_os_str(dir.as_os_str()))))
+        }
         None => Ok(ValRef::None),
     }
 }
@@ -152,6 +168,7 @@ pub fn init(mut scope: Scope) -> Scope {
 
     put!("has-git?", has_git);
     put!("git-dir", git_dir);
+    put!("git-workdir", git_workdir);
     put!("git-branch", git_branch);
     scope
 }
